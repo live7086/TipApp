@@ -25,7 +25,7 @@ fun RoundIconButton(
     modifier: Modifier = Modifier,
     imageVector: ImageVector,
     onClick: () -> Unit,
-    tint: Color = Color.Black.copy(alpha = 0.8f),
+    tint: Color = Color.Yellow.copy(alpha = 0.8f),
     backgroundColor: Color = MaterialTheme.colorScheme.background,
     elevation: Dp = 4.dp
 ) {
@@ -35,7 +35,7 @@ fun RoundIconButton(
     Card(
         modifier = modifier
             .padding(all = 4.dp)
-            .then(if (isClicked.value) IconButtonModifier else Modifier)
+            .then(if (isClicked.value) IconButtonModifier else Modifier.size(40.dp))
             .clickable {
                 onClick()
                 isClicked.value = !isClicked.value  // 更新 isClicked 的狀態

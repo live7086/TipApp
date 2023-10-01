@@ -1,5 +1,6 @@
 package com.example.practice_tipapp.components
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,8 +40,8 @@ fun InputField(
         label = { Text(text = labelId) },
         leadingIcon = { Icon(imageVector = Icons.Default.Favorite, contentDescription ="" )},
         singleLine = true,
-        textStyle = TextStyle(fontSize = 18.sp,color = Color.White),
-        modifier = Modifier.padding(start = 16.dp,end = 16.dp,bottom = 16.dp),
+        textStyle = TextStyle(fontSize = 18.sp,color = Color.Black),
+        modifier = Modifier.padding(start = 16.dp,end = 16.dp,bottom = 16.dp).fillMaxWidth(),
         enabled = enabled,
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,

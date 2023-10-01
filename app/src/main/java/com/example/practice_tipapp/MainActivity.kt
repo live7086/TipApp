@@ -1,7 +1,7 @@
 package com.example.practice_tipapp
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -22,9 +22,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -37,6 +39,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.practice_tipapp.components.InputField
 import com.example.practice_tipapp.ui.theme.Practice_TipAPPTheme
+import com.example.practice_tipapp.util.calTotalPerPerson
+import com.example.practice_tipapp.util.calculateTotalTip
 import com.example.practice_tipapp.widgets.RoundIconButton
 
 class MainActivity : ComponentActivity() {
@@ -44,10 +48,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MyApp {
-                Column{
-                    TopHeader()
-                    MainContent()
-                }
+
 
             }
         }
@@ -57,14 +58,16 @@ class MainActivity : ComponentActivity() {
 fun MyApp(content: @Composable () -> Unit) {
     Practice_TipAPPTheme {
         Surface(color = Color.White) {
-            content()
+            Column{
+                MainContent()
+            }
         }
     }
 }
 
 @Preview
 @Composable
-fun TopHeader (totalPerPerson : Double = 0.0){
+fun TopHeader (totalPerPers : Double = 0.0){
     Surface (
         modifier = Modifier
             .fillMaxWidth()
@@ -79,7 +82,7 @@ fun TopHeader (totalPerPerson : Double = 0.0){
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-            val total = "%.2f".format(totalPerPerson)
+            val total = "%.2f".format(totalPerPers)
             Text(
                 text = "Total Per Person",
                 style = MaterialTheme.typography.bodySmall,
@@ -103,25 +106,34 @@ fun TopHeader (totalPerPerson : Double = 0.0){
 @Preview
 @Composable
 fun MainContent() {
-    // 創建一個可觀察的狀態來儲存帳單金額
-    val billAmtState = remember { mutableStateOf("") }
-
-    // 呼叫 BillForm 並更新 billAmtState
-    BillForm { billAmt ->
-        billAmtState.value = billAmt
+    val splitState = remember {
+        mutableStateOf(1)
     }
-
-    // 使用 billAmtState 來顯示文字
-    Text(text = "帳單金額：${billAmtState.value}")
+    val tipAmountState = remember {
+        mutableStateOf(0.0)
+    }
+    val totalPerPersonState = remember {
+        mutableStateOf(0.0)
+    }
+    BillForm(splitState = splitState,
+        tipAmountState = tipAmountState,
+        totalPerPersonState = totalPerPersonState)
 }
 
 
+@SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BillForm(
     modifier: Modifier = Modifier,
-    onValChange: (String) -> Unit={},
+    range: IntRange = 1..100,
+    splitState: MutableState<Int>,
+    tipAmountState: MutableState<Double>,
+    totalPerPersonState: MutableState<Double>,
+    onValChange: (String) -> Unit = {},
 ){
+
+    //State
     val totalBillState = remember{
         mutableStateOf("")
     }
@@ -129,6 +141,13 @@ fun BillForm(
         totalBillState.value.trim().isNotEmpty()
     }
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    val sliderPositionState = remember {
+        mutableStateOf(0f)
+    }
+    val tipPer = (sliderPositionState.value * 100).toInt()
+
+TopHeader(totalPerPers = totalPerPersonState.value)
     Surface (
         modifier = Modifier
             .padding(2.dp)
@@ -149,11 +168,12 @@ fun BillForm(
                         keyboardController?.hide()
                     }
                 )
-                if(validState){
+                //if(validState){
                     Row (
                         modifier = Modifier.padding(3.dp),
                         horizontalArrangement = Arrangement.Start) {
                         Text(
+                            color = Color.Black,
                             text = "Split",
                             modifier = Modifier.align( alignment = Alignment.CenterVertically),
                         )
@@ -163,17 +183,75 @@ fun BillForm(
                             modifier = Modifier.padding(horizontal = 3.dp),
                             horizontalArrangement = Arrangement.End
                         ) {
+                            val splitState = remember {
+                                mutableStateOf(1)
+                            }
+                            val minValue = 1
+                            val maxValue = 10
                             RoundIconButton(imageVector = Icons.Default.Delete,
-                                onClick = {})
+                                onClick =   {
+
+                                    if (splitState.value > minValue)
+                                    {
+                                        splitState.value -= 1
+                                        totalPerPersonState.value = calTotalPerPerson(totalBillState.value.toDouble(), tipPer, split = splitState.value)
+
+                                    }
+                                }
+                            )
+                            Text(
+                                text = "${splitState.value}",
+                                modifier = Modifier
+                                    .padding(start = 6.dp, end = 6.dp)
+                                    .align(Alignment.CenterVertically),
+                                color = Color.Black)
                             RoundIconButton(imageVector = Icons.Default.Add,
-                                onClick = {})
+                                onClick = {if (splitState.value < maxValue){
+                                    splitState.value += 1
+                                    totalPerPersonState.value = calTotalPerPerson(totalBillState.value.toDouble(), tipPer, split = splitState.value)
+
+                                } })
                         }
                     }
-                }else{
+                    Row {
+                        Text(text = "Tip",modifier = Modifier.align(Alignment.CenterVertically),color = Color.Black)
+                        Spacer(modifier = Modifier.width(200.dp))
+                        Text(text = "${tipAmountState.value}",modifier = Modifier.align(Alignment.CenterVertically),color = Color.Black)
 
+                    }
+                Column {
+                    Text(text = "$${tipAmountState.value}",modifier = Modifier.align(Alignment.CenterHorizontally),
+                        color = Color.Black)
                 }
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Slider(
+                            modifier = Modifier.padding(16.dp),
+                            value = sliderPositionState.value,
+                            onValueChange = { newVal ->
+                                sliderPositionState.value = newVal
+                                tipAmountState.value =
+                                    calculateTotalTip(totalBillState.value.toDouble(),tipPer)
+
+                                totalPerPersonState.value =
+                                    calTotalPerPerson(
+                                    totalBillState.value.toDouble(),
+                                    tipPer,
+                                    splitState.value
+                                )
+
+                            },
+                        onValueChangeFinished = {}
+                        )
+                //}else{
+
+                //}
             }
         }
 
     }
 }
+
+
+
+
